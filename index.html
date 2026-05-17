@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workify</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2303a9f4'/%3E%3Cpath d='M9 12 L13 22 L16 16 L19 22 L23 12' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #1a1c25;
+    --surface: #232538;
+    --surface-2: #2a2c42;
+    --border: #34374f;
+    --text: #e6e8f0;
+    --muted: #8a8fa3;
+    --accent: #03a9f4;
+    --accent-hover: #0398db;
+    --danger: #e74c3c;
+
+    --radius-sm: 0.1875rem;  /* 3px */
+    --radius:    0.25rem;    /* 4px */
+    --radius-md: 0.375rem;   /* 6px */
+    --radius-lg: 0.5rem;     /* 8px */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.875rem;        /* 14px */
+  }
+  .hidden { display: none !important; }
+
+  header {
+    background: var(--surface);
+    padding: 0.75rem 1.5rem;    /* 12px 24px */
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  header .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--accent);
+    letter-spacing: 0.03em;
+  }
+  header .logo-mark {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    display: block;
+  }
+  header .tabs { display: flex; gap: 0.25rem; flex: 1; margin-left: 0.5rem; }
+  header .tab {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    padding: 0.375rem 0.875rem;
+    cursor: pointer;
+    font-size: 0.8125rem;        /* 13px */
+    font-family: inherit;
+    border-radius: var(--radius);
+  }
+  header .tab.active { color: var(--text); background: var(--surface-2); }
+  header .tab:hover:not(.active) { color: var(--text); }
+  header .file-info { color: var(--muted); font-size: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+  header .file-info code { color: var(--text); background: var(--surface-2); padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); }
+  header .file-info button {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    padding: 0.25rem 0.625rem; border-radius: var(--radius); cursor: pointer; font-size: 0.75rem;
+  }
+  header .file-info button:hover { color: var(--text); border-color: var(--accent); }
+
+  main { max-width: 81.25rem; margin: 0 auto; padding: 1rem 1.5rem 5rem; }
+
+  /* 6 columns, no phantom gap */
+  .entry-bar, .entry-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 10rem auto 8.75rem 5.625rem auto;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .entry-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.625rem;
+    margin-bottom: 1.5rem;
+  }
+  .entry-bar input,
+  .entry-bar select,
+  .entry-row input,
+  .entry-row select {
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    color: var(--text);
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-family: inherit;
+    outline: none;
+    width: 100%;
+    min-width: 0;
+  }
+  .entry-bar input:focus,
+  .entry-bar select:focus,
+  .entry-row input:focus,
+  .entry-row select:focus { border-color: var(--accent); }
+
+  .time-range { display: flex; align-items: center; gap: 0.25rem; color: var(--muted); }
+  .time-range input { width: 5rem; text-align: center; font-variant-numeric: tabular-nums; }
+
+  .duration-input { text-align: center; font-variant-numeric: tabular-nums; }
+  .date-input { text-align: center; font-variant-numeric: tabular-nums; }
+
+  /* date field wrapper with built-in calendar trigger */
+  .date-field {
+    display: flex;
+    align-items: stretch;
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .date-field:focus-within { border-color: var(--accent); }
+  .date-field .date-input {
+    background: transparent !important;
+    border: none !important;
+    padding: 0.5rem 0.625rem;
+    flex: 1;
+    min-width: 0;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.875rem;
+    outline: none;
+  }
+  .date-trigger {
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .date-trigger:hover { color: var(--text); }
+  .date-trigger svg { display: block; }
+
+  /* calendar popup */
+  .cal-popup {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.5);
+    z-index: 200;
+  }
+  .cal-popup.hidden { display: none; }
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+  }
+  .cal-header .cal-nav {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    line-height: 1;
+    font-size: 0.875rem;
+  }
+  .cal-header .cal-nav:hover { border-color: var(--accent); }
+  .cal-title { font-weight: 600; flex: 1; text-align: center; }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1.875rem);
+    gap: 0.125rem;
+  }
+  .cal-dow {
+    color: var(--muted);
+    font-size: 0.6875rem;
+    text-align: center;
+    padding: 0.25rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .cal-day {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text);
+    width: 1.875rem;
+    height: 1.875rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-family: inherit;
+    padding: 0;
+  }
+  .cal-day:hover { background: var(--surface-2); }
+  .cal-day.today { border-color: var(--muted); }
+  .cal-day.selected { background: var(--accent); color: #fff; }
+  .cal-day.selected:hover { background: var(--accent-hover); }
+  .cal-footer {
+    margin-top: 0.625rem;
+    padding-top: 0.625rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .cal-today {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    cursor: pointer;
+    padding: 0.375rem 1.125rem;
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+  }
+  .cal-today:hover { border-color: var(--accent); background: var(--surface-2); }
+
+  /* description suggestions popup */
+  .sug-popup {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.5);
+    z-index: 200;
+    max-height: 15rem;
+    overflow-y: auto;
+    padding: 0.25rem;
+  }
+  .sug-popup.hidden { display: none; }
+  .sug-item {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    text-align: left;
+    padding: 0.5rem 0.625rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.875rem;
+    border-radius: var(--radius);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sug-item:hover, .sug-item.active { background: var(--surface-2); }
+  .sug-item .match { color: var(--accent); font-weight: 600; }
+
+  /* Reports */
+  .report-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .report-controls select {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-family: inherit;
+  }
+  .range-picker { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .custom-range { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .custom-range.hidden { display: none; }
+  .custom-range .date-field { width: 9.375rem; }
+  .cr-label { color: var(--muted); font-size: 0.8125rem; }
+  .report-totals { color: var(--muted); font-size: 0.875rem; }
+  .report-totals strong {
+    color: var(--text);
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin-left: 0.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .report-chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .report-chart-card svg { display: block; width: 100%; height: auto; }
+  .report-split { display: grid; grid-template-columns: 1fr 17.5rem; gap: 1.25rem; }
+  @media (max-width: 56.25em) { .report-split { grid-template-columns: 1fr; } }
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .report-table th, .report-table td { padding: 0.625rem 0.875rem; text-align: left; }
+  .report-table thead th {
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  .report-table tbody tr { border-bottom: 1px solid var(--border); }
+  .report-table tbody tr:last-child { border-bottom: none; }
+  .report-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .report-table .proj-dot {
+    display: inline-block;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+  .report-donut-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .report-donut-card svg { max-width: 15rem; }
+  .report-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 2.5rem 1.25rem;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1.125rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.8125rem;
+  }
+  button.primary:hover { background: var(--accent-hover); }
+
+  .week-group { margin-bottom: 2rem; }
+  .week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0.75rem 0.625rem;
+    margin-bottom: 0.625rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .week-label { color: var(--text); font-weight: 600; font-size: 0.9375rem; }
+  .week-total-line { color: var(--muted); font-size: 0.8125rem; }
+  .week-total-line strong {
+    color: var(--text);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin-left: 0.25rem;
+  }
+
+  .day-group { margin-bottom: 1rem; }
+  .day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+  .day-header .day-total { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .entry-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 0.5rem 0.625rem;
+  }
+  .day-group .day-header + .entry-row {
+    border-top: 1px solid var(--border);
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-md);
+  }
+  .day-group .entry-row:last-child {
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+  }
+
+  .entry-row .delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius);
+  }
+  .entry-row .delete-btn:hover { color: var(--danger); background: var(--surface-2); }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 2.5rem 1.25rem;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  footer.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0.75rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+  footer.pagination select {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.375rem 0.5rem;
+    border-radius: var(--radius);
+    margin: 0 0.375rem;
+  }
+  footer.pagination .page-controls { display: flex; align-items: center; gap: 0.5rem; }
+  footer.pagination button {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+  footer.pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+  footer.pagination button:not(:disabled):hover { border-color: var(--accent); }
+
+  /* Overlay */
+  .overlay-root {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 18, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+  }
+  .overlay-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem 2rem;
+    max-width: 28.75rem;
+    width: 100%;
+    box-shadow: 0 1.25rem 3.75rem rgba(0,0,0,0.5);
+  }
+  .overlay-card h2 { margin: 0 0 0.5rem; font-size: 1.125rem; }
+  .overlay-card p { color: var(--muted); margin: 0 0 1.25rem; line-height: 1.5; font-size: 0.8125rem; }
+  .overlay-card .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .overlay-card button {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.625rem 1rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-family: inherit;
+  }
+  .overlay-card button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+  }
+  .overlay-card button.primary:hover { background: var(--accent-hover); }
+  .overlay-card button:not(.primary):hover { border-color: var(--accent); }
+  .overlay-card input[type=text] {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    width: 100%;
+    margin-bottom: 1rem;
+    outline: none;
+    font-family: inherit;
+  }
+  .overlay-card input[type=text]:focus { border-color: var(--accent); }
+  .overlay-card .error { color: var(--danger); font-size: 0.75rem; margin-top: 0.5rem; }
+
+  @media (max-width: 56.25em) {
+    .entry-bar, .entry-row { grid-template-columns: 1fr; }
+    .time-range { justify-content: flex-start; }
+    .time-range input { width: auto; flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div id="overlayRoot" class="overlay-root hidden">
+  <div class="overlay-card" id="overlayCard"></div>
+</div>
+
+<header>
+  <div class="logo">
+    <svg class="logo-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="16" cy="16" r="14" fill="currentColor"/>
+      <path d="M9 12 L13 22 L16 16 L19 22 L23 12" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>Workify</span>
+  </div>
+  <nav class="tabs" id="viewTabs">
+    <button type="button" class="tab active" data-view="tracker">Time Tracker</button>
+    <button type="button" class="tab" data-view="reports">Reports</button>
+  </nav>
+  <div class="file-info hidden" id="fileInfo">
+    <span>Data file: <code id="fileName"></code></span>
+    <button type="button" id="changeFileBtn">Change…</button>
+  </div>
+</header>
+
+<main id="appRoot" class="hidden">
+  <section id="trackerView">
+  <form id="entryForm" class="entry-bar" autocomplete="off">
+    <input type="text" name="description" placeholder="What have you worked on?" autocomplete="off" required>
+    <select name="project" required></select>
+    <div class="time-range">
+      <input type="text" name="startTime" class="time-input" inputmode="numeric" maxlength="5" placeholder="HH:MM" pattern="^(\d{1,4}|\d{1,2}[:.\-\s]\d{1,2})$" required>
+      <span>-</span>
+      <input type="text" name="endTime" class="time-input" inputmode="numeric" maxlength="5" placeholder="HH:MM" pattern="^(\d{1,4}|\d{1,2}[:.\-\s]\d{1,2})$" required>
+    </div>
+    <div class="date-field">
+      <input type="text" name="date" class="date-input" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" pattern="^\d{1,2}[./\-]\d{1,2}[./\-]\d{2,4}$" required>
+      <button type="button" class="date-trigger" aria-label="Open calendar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+      </button>
+    </div>
+    <input type="text" name="duration" class="duration-input" placeholder="00:00" pattern="^\d{1,3}:[0-5][0-9]$" title="HH:MM">
+    <button type="submit" class="primary">Add</button>
+  </form>
+
+  <div id="entriesContainer"></div>
+
+  <footer class="pagination">
+    <label>
+      Items per page:
+      <select id="pageSize">
+        <option>10</option>
+        <option>25</option>
+        <option>50</option>
+        <option>100</option>
+        <option>200</option>
+      </select>
+    </label>
+    <div class="page-controls">
+      <button id="prevPage" type="button">‹ Prev</button>
+      <span id="pageInfo">1 / 1</span>
+      <button id="nextPage" type="button">Next ›</button>
+    </div>
+  </footer>
+  </section>
+
+  <section id="reportsView" class="hidden">
+    <div class="report-controls">
+      <div class="range-picker">
+        <label>
+          Range:
+          <select id="reportRange">
+            <option value="this-week">This week</option>
+            <option value="last-week">Last week</option>
+            <option value="this-month" selected>This month</option>
+            <option value="last-month">Last month</option>
+            <option value="last-30">Last 30 days</option>
+            <option value="this-year">This year</option>
+            <option value="last-year">Last year</option>
+            <option value="all">All time</option>
+            <option value="custom">Custom range…</option>
+          </select>
+        </label>
+        <div id="customRange" class="custom-range hidden">
+          <span class="cr-label">From</span>
+          <div class="date-field">
+            <input type="text" id="rangeFrom" class="date-input" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" pattern="^\d{1,2}[./\-]\d{1,2}[./\-]\d{2,4}$">
+            <button type="button" class="date-trigger" aria-label="Open calendar">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+            </button>
+          </div>
+          <span class="cr-label">To</span>
+          <div class="date-field">
+            <input type="text" id="rangeTo" class="date-input" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" pattern="^\d{1,2}[./\-]\d{1,2}[./\-]\d{2,4}$">
+            <button type="button" class="date-trigger" aria-label="Open calendar">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="report-totals">Total: <strong id="reportTotal">00:00</strong></div>
+    </div>
+
+    <div class="report-chart-card">
+      <svg id="reportChart" preserveAspectRatio="xMidYMid meet" aria-label="Daily hours"></svg>
+    </div>
+
+    <div class="report-split">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th class="num">Duration</th>
+            <th class="num">Share</th>
+          </tr>
+        </thead>
+        <tbody id="reportProjectBody"></tbody>
+      </table>
+      <div class="report-donut-card">
+        <svg id="reportDonut" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" aria-label="Project distribution"></svg>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  // ---------- IndexedDB for the file handle ----------
+  const IDB_NAME = 'workify';
+  const IDB_STORE = 'handles';
+  const HANDLE_KEY = 'dataFile';
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function idbGet(key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function idbSet(key, value) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  // ---------- State ----------
+  const state = {
+    entries: [],
+    projects: [],
+    lastProject: null,
+    pageSize: 50,
+    page: 1,
+  };
+  let fileHandle = null;
+  let mode = null; // 'server' | 'fsa'
+
+  function applyData(data) {
+    if (!data || typeof data !== 'object') return;
+    state.entries = Array.isArray(data.entries) ? data.entries : [];
+    state.projects = Array.isArray(data.projects) ? data.projects : [];
+    state.lastProject = data.lastProject || null;
+    state.pageSize = Number.isFinite(data.pageSize) ? data.pageSize : 50;
+  }
+
+  function currentDataPayload() {
+    return {
+      entries: state.entries,
+      projects: state.projects,
+      lastProject: state.lastProject,
+      pageSize: state.pageSize,
+    };
+  }
+
+  async function persist() {
+    const data = currentDataPayload();
+    if (mode === 'server') {
+      await fetch('/api/data', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return;
+    }
+    if (mode === 'fsa') {
+      if (!fileHandle) return;
+      const writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(data, null, 2));
+      await writable.close();
+    }
+  }
+
+  async function loadFromFile() {
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    if (!text.trim()) return;
+    applyData(JSON.parse(text));
+  }
+
+  // ---------- Permissions ----------
+  async function hasPermission(handle) {
+    return (await handle.queryPermission({ mode: 'readwrite' })) === 'granted';
+  }
+  async function requestPermission(handle) {
+    return (await handle.requestPermission({ mode: 'readwrite' })) === 'granted';
+  }
+
+  // ---------- Overlay ----------
+  const overlay = document.getElementById('overlayRoot');
+  const overlayCard = document.getElementById('overlayCard');
+  function showOverlay(html) {
+    overlayCard.innerHTML = html;
+    overlay.classList.remove('hidden');
+  }
+  function hideOverlay() {
+    overlay.classList.add('hidden');
+    overlayCard.innerHTML = '';
+  }
+
+  function showFatal(message, title = 'Cannot start') {
+    showOverlay(`
+      <h2>${title}</h2>
+      <div style="color: var(--muted); line-height: 1.5; font-size: 0.8125rem;">${message}</div>
+    `);
+  }
+
+  function showSetupOverlay() {
+    showOverlay(`
+      <h2>Workify · Set up your data file</h2>
+      <p>Workify saves your time entries to a single JSON file on disk. Pick an existing file or create a new one — the same file can be opened in any browser on this machine to see the same data.</p>
+      <div class="actions">
+        <button type="button" class="primary" id="createNewBtn">Create new file…</button>
+        <button type="button" id="openExistingBtn">Open existing…</button>
+      </div>
+      <div class="error hidden" id="setupError"></div>
+    `);
+    document.getElementById('createNewBtn').onclick = async () => {
+      try {
+        const h = await window.showSaveFilePicker({
+          suggestedName: 'workify-data.json',
+          types: [{ description: 'Workify data', accept: { 'application/json': ['.json'] } }],
+        });
+        fileHandle = h;
+        await idbSet(HANDLE_KEY, h);
+        await persist(); // write empty initial structure
+        await afterStorageReady();
+      } catch (err) {
+        if (err.name !== 'AbortError') showSetupError(err.message);
+      }
+    };
+    document.getElementById('openExistingBtn').onclick = async () => {
+      try {
+        const [h] = await window.showOpenFilePicker({
+          types: [{ description: 'Workify data', accept: { 'application/json': ['.json'] } }],
+          multiple: false,
+        });
+        if (!await hasPermission(h)) {
+          if (!await requestPermission(h)) {
+            showSetupError('Permission denied.');
+            return;
+          }
+        }
+        fileHandle = h;
+        await idbSet(HANDLE_KEY, h);
+        await loadFromFile();
+        await afterStorageReady();
+      } catch (err) {
+        if (err.name !== 'AbortError') showSetupError(err.message);
+      }
+    };
+  }
+  function showSetupError(msg) {
+    const el = document.getElementById('setupError');
+    if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+  }
+
+  function showReconnectOverlay(stored) {
+    showOverlay(`
+      <h2>Reconnect to your data file</h2>
+      <p>Workify needs your permission to read and write <code>${stored.name}</code>.</p>
+      <div class="actions">
+        <button type="button" class="primary" id="reconnectBtn">Grant access</button>
+        <button type="button" id="pickDifferentBtn">Choose different file…</button>
+      </div>
+    `);
+    document.getElementById('reconnectBtn').onclick = async () => {
+      if (await requestPermission(stored)) {
+        fileHandle = stored;
+        await loadFromFile();
+        await afterStorageReady();
+      } else {
+        alert('Permission denied. Try again or choose a different file.');
+      }
+    };
+    document.getElementById('pickDifferentBtn').onclick = () => showSetupOverlay();
+  }
+
+  function showFirstProjectOverlay() {
+    showOverlay(`
+      <h2>Create your first project</h2>
+      <p>Workify groups time entries by project. Name your first one to get started — you can add more later.</p>
+      <input type="text" id="firstProjectInput" placeholder="e.g. Acme Website" autofocus>
+      <div class="actions">
+        <button type="button" class="primary" id="createProjectBtn">Create project</button>
+      </div>
+    `);
+    const input = document.getElementById('firstProjectInput');
+    setTimeout(() => input.focus(), 50);
+    const submit = async () => {
+      const name = input.value.trim();
+      if (!name) { input.focus(); return; }
+      state.projects = [name];
+      state.lastProject = name;
+      await persist();
+      hideOverlay();
+      mountApp();
+    };
+    document.getElementById('createProjectBtn').onclick = submit;
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  }
+
+  async function afterStorageReady() {
+    document.getElementById('fileName').textContent = fileHandle.name;
+    document.getElementById('fileInfo').classList.remove('hidden');
+    if (state.projects.length === 0) {
+      showFirstProjectOverlay();
+    } else {
+      hideOverlay();
+      mountApp();
+    }
+  }
+
+  // ---------- Time helpers ----------
+  function normalizeTime(raw) {
+    if (!raw) return null;
+    const s = String(raw).trim();
+    let h, mm;
+    if (/^\d{1,4}$/.test(s)) {
+      // Compact: 9 -> 09:00, 12 -> 12:00, 915 -> 09:15, 1515 -> 15:15
+      if (s.length <= 2) { h = parseInt(s, 10); mm = 0; }
+      else if (s.length === 3) { h = parseInt(s.slice(0, 1), 10); mm = parseInt(s.slice(1), 10); }
+      else { h = parseInt(s.slice(0, 2), 10); mm = parseInt(s.slice(2), 10); }
+    } else {
+      const sep = s.replace(/[.\s-]/g, ':');
+      const m = sep.match(/^(\d{1,2}):(\d{1,2})$/);
+      if (!m) return null;
+      h = parseInt(m[1], 10);
+      mm = parseInt(m[2], 10);
+    }
+    if (h > 23 || mm > 59) return null;
+    return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  }
+  function timeToMinutes(t) {
+    if (!t) return 0;
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+  function minutesToTime(m) {
+    m = ((m % 1440) + 1440) % 1440;
+    const h = Math.floor(m / 60), mm = m % 60;
+    return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  }
+  function calcDuration(startTime, endTime) {
+    let diff = timeToMinutes(endTime) - timeToMinutes(startTime);
+    if (diff < 0) diff += 1440;
+    return diff;
+  }
+  function formatDuration(mins) {
+    mins = Math.max(0, mins | 0);
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }
+  function parseDuration(str) {
+    if (!str) return null;
+    const m = String(str).trim().match(/^(\d{1,3}):([0-5]\d)$/);
+    if (!m) return null;
+    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  }
+
+  // ---------- Date helpers ----------
+  function todayISO() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function isoToDisplayDate(iso) {
+    if (!iso) return '';
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return iso;
+    return `${m[3]}/${m[2]}/${m[1]}`;
+  }
+  function displayToIsoDate(input) {
+    if (!input) return null;
+    const m = String(input).trim().match(/^(\d{1,2})[./\-\s](\d{1,2})[./\-\s](\d{2,4})$/);
+    if (!m) return null;
+    let [, d, mo, y] = m;
+    if (y.length === 2) y = (parseInt(y, 10) >= 70 ? '19' : '20') + y;
+    d = d.padStart(2, '0');
+    mo = mo.padStart(2, '0');
+    const dt = new Date(`${y}-${mo}-${d}T00:00:00`);
+    if (isNaN(dt.getTime())) return null;
+    if (dt.getFullYear() !== parseInt(y, 10) || dt.getMonth() + 1 !== parseInt(mo, 10) || dt.getDate() !== parseInt(d, 10)) return null;
+    return `${y}-${mo}-${d}`;
+  }
+  function getWeekRange() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    const dow = (d.getDay() + 6) % 7; // Monday = 0
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - dow);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    return [monday, sunday];
+  }
+  function isThisWeek(dateStr) {
+    const [mon, sun] = getWeekRange();
+    const d = new Date(dateStr + 'T00:00:00');
+    return d >= mon && d <= sun;
+  }
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    if (d.getTime() === today.getTime()) return 'Today';
+    if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+    const opts = { weekday: 'short', month: 'short', day: 'numeric' };
+    if (d.getFullYear() !== today.getFullYear()) opts.year = 'numeric';
+    return d.toLocaleDateString('en-GB', opts);
+  }
+  function weekStartIso(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const dow = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - dow);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function formatWeekLabel(weekStart) {
+    const monday = new Date(weekStart + 'T00:00:00');
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const thisMonday = new Date(today);
+    thisMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+    const lastMonday = new Date(thisMonday); lastMonday.setDate(thisMonday.getDate() - 7);
+    if (monday.getTime() === thisMonday.getTime()) return 'This week';
+    if (monday.getTime() === lastMonday.getTime()) return 'Last week';
+    const sameYear = monday.getFullYear() === sunday.getFullYear();
+    const sameMonth = sameYear && monday.getMonth() === sunday.getMonth();
+    const fmtFull = (d) => d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+    const fmtDay  = (d) => d.toLocaleDateString('en-GB', { day: 'numeric' });
+    const yearSuffix = monday.getFullYear() !== today.getFullYear() ? `, ${monday.getFullYear()}` : '';
+    if (sameMonth) return `${fmtFull(monday)} - ${fmtDay(sunday)}${yearSuffix}`;
+    return `${fmtFull(monday)} - ${fmtFull(sunday)}${yearSuffix}`;
+  }
+
+  // ---------- Projects ----------
+  const NEW_PROJECT_TOKEN = '__new__';
+  function fillProjectSelect(select, selected) {
+    select.innerHTML = '';
+    for (const p of state.projects) {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      if (p === selected) opt.selected = true;
+      select.appendChild(opt);
+    }
+    const opt = document.createElement('option');
+    opt.value = NEW_PROJECT_TOKEN;
+    opt.textContent = '+ Create project…';
+    select.appendChild(opt);
+  }
+  async function handleNewProjectSelection(select, fallback) {
+    if (select.value !== NEW_PROJECT_TOKEN) return select.value;
+    const name = (prompt('New project name:') || '').trim();
+    let chosen = fallback || state.projects[0];
+    if (name) {
+      if (!state.projects.includes(name)) {
+        state.projects.push(name);
+        await persist();
+      }
+      chosen = name;
+    }
+    fillProjectSelect(select, chosen);
+    return chosen;
+  }
+
+  // ---------- Time slot defaults ----------
+  function nextSlotForDate(dateStr) {
+    const onDate = state.entries.filter(e => e.date === dateStr);
+    if (onDate.length === 0) return { start: '07:15', end: '07:25' };
+    const latest = onDate.reduce((a, b) =>
+      timeToMinutes(b.endTime) > timeToMinutes(a.endTime) ? b : a
+    );
+    const startM = timeToMinutes(latest.endTime);
+    return { start: minutesToTime(startM), end: minutesToTime(startM + 10) };
+  }
+
+  // ---------- Form ----------
+  let form, fDesc, fProj, fStart, fEnd, fDate, fDur;
+
+  function bindForm() {
+    form = document.getElementById('entryForm');
+    fDesc = form.elements.description;
+    fProj = form.elements.project;
+    fStart = form.elements.startTime;
+    fEnd = form.elements.endTime;
+    fDate = form.elements.date;
+    fDur = form.elements.duration;
+
+    const normalizeOnChange = (input) => () => {
+      const v = normalizeTime(input.value);
+      if (v) input.value = v;
+      syncDurationFromTimes();
+    };
+    fStart.addEventListener('change', normalizeOnChange(fStart));
+    fEnd.addEventListener('change', normalizeOnChange(fEnd));
+    fStart.addEventListener('blur', normalizeOnChange(fStart));
+    fEnd.addEventListener('blur', normalizeOnChange(fEnd));
+    fDur.addEventListener('change', () => {
+      const m = parseDuration(fDur.value);
+      if (m != null && fStart.value) {
+        fEnd.value = minutesToTime(timeToMinutes(fStart.value) + m);
+      } else {
+        syncDurationFromTimes();
+      }
+    });
+    fProj.addEventListener('change', async () => {
+      await handleNewProjectSelection(fProj, state.lastProject);
+    });
+    fDate.addEventListener('change', () => {
+      const iso = displayToIsoDate(fDate.value);
+      if (!iso) {
+        fDate.value = isoToDisplayDate(todayISO());
+        return;
+      }
+      fDate.value = isoToDisplayDate(iso);
+      const slot = nextSlotForDate(iso);
+      fStart.value = slot.start;
+      fEnd.value = slot.end;
+      syncDurationFromTimes();
+    });
+
+    form.addEventListener('submit', onAddEntry);
+  }
+
+  function syncDurationFromTimes() {
+    if (fStart.value && fEnd.value) {
+      fDur.value = formatDuration(calcDuration(fStart.value, fEnd.value));
+    }
+  }
+
+  function resetForm({ keepProject = true } = {}) {
+    fDesc.value = '';
+    const currentIso = displayToIsoDate(fDate.value) || todayISO();
+    fDate.value = isoToDisplayDate(currentIso);
+    const slot = nextSlotForDate(currentIso);
+    fStart.value = slot.start;
+    fEnd.value = slot.end;
+    fDur.value = formatDuration(calcDuration(slot.start, slot.end));
+    fillProjectSelect(fProj, keepProject ? (state.lastProject || state.projects[0]) : state.projects[0]);
+    fDesc.focus();
+  }
+
+  async function onAddEntry(ev) {
+    ev.preventDefault();
+    const project = await handleNewProjectSelection(fProj, state.lastProject);
+    if (!project) return;
+    const startTime = normalizeTime(fStart.value);
+    const endTime = normalizeTime(fEnd.value);
+    const dateIso = displayToIsoDate(fDate.value);
+    if (!startTime || !endTime || !dateIso) return;
+    const duration = parseDuration(fDur.value);
+    const finalDuration = duration != null ? duration : calcDuration(startTime, endTime);
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      description: fDesc.value.trim(),
+      project,
+      startTime,
+      endTime,
+      date: dateIso,
+      duration: finalDuration,
+    };
+    state.entries.push(entry);
+    state.lastProject = project;
+    await persist();
+    resetForm({ keepProject: true });
+    state.page = 1;
+    render();
+  }
+
+  // ---------- Render entries ----------
+  let container, pageSizeSel, pageInfo, prevBtn, nextBtn;
+
+  function entrySortKey(e) {
+    return e.date + ' ' + (e.startTime || '00:00') + ' ' + e.id;
+  }
+
+  function renderEntryRow(entry) {
+    const row = document.createElement('div');
+    row.className = 'entry-row';
+    row.dataset.id = entry.id;
+    row.innerHTML = `
+      <input type="text" data-field="description" autocomplete="off">
+      <select data-field="project"></select>
+      <div class="time-range">
+        <input type="text" data-field="startTime" class="time-input" inputmode="numeric" maxlength="5" placeholder="HH:MM" pattern="^(\\d{1,4}|\\d{1,2}[:.\\-\\s]\\d{1,2})$" value="${entry.startTime}">
+        <span>-</span>
+        <input type="text" data-field="endTime" class="time-input" inputmode="numeric" maxlength="5" placeholder="HH:MM" pattern="^(\\d{1,4}|\\d{1,2}[:.\\-\\s]\\d{1,2})$" value="${entry.endTime}">
+      </div>
+      <div class="date-field">
+        <input type="text" data-field="date" class="date-input" inputmode="numeric" maxlength="10" placeholder="DD/MM/YYYY" pattern="^\\d{1,2}[./\\-]\\d{1,2}[./\\-]\\d{2,4}$" value="${isoToDisplayDate(entry.date)}">
+        <button type="button" class="date-trigger" aria-label="Open calendar">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+        </button>
+      </div>
+      <input type="text" data-field="duration" class="duration-input" value="${formatDuration(entry.duration)}" pattern="^\\d{1,3}:[0-5][0-9]$" title="HH:MM">
+      <button type="button" class="delete-btn" title="Delete">×</button>
+    `;
+    row.querySelector('[data-field="description"]').value = entry.description;
+    const sel = row.querySelector('[data-field="project"]');
+    fillProjectSelect(sel, entry.project);
+
+    row.addEventListener('change', async (ev) => {
+      const t = ev.target;
+      const field = t.dataset && t.dataset.field;
+      if (!field) return;
+      if (field === 'project') {
+        entry.project = await handleNewProjectSelection(t, entry.project);
+      } else if (field === 'duration') {
+        const m = parseDuration(t.value);
+        if (m == null) {
+          t.value = formatDuration(entry.duration);
+          return;
+        }
+        entry.duration = m;
+        entry.endTime = minutesToTime(timeToMinutes(entry.startTime) + m);
+      } else if (field === 'startTime' || field === 'endTime') {
+        const v = normalizeTime(t.value);
+        if (!v) {
+          t.value = entry[field];
+          return;
+        }
+        t.value = v;
+        entry[field] = v;
+        entry.duration = calcDuration(entry.startTime, entry.endTime);
+      } else if (field === 'date') {
+        const iso = displayToIsoDate(t.value);
+        if (!iso) {
+          t.value = isoToDisplayDate(entry.date);
+          return;
+        }
+        t.value = isoToDisplayDate(iso);
+        entry.date = iso;
+      } else {
+        entry[field] = t.value;
+      }
+      await persist();
+      render();
+    });
+    row.querySelector('.delete-btn').addEventListener('click', async () => {
+      if (!confirm('Delete this entry?')) return;
+      state.entries = state.entries.filter(e => e.id !== entry.id);
+      await persist();
+      render();
+    });
+    return row;
+  }
+
+  function uniqueDescriptions() {
+    const seen = new Set();
+    const items = [];
+    for (let i = state.entries.length - 1; i >= 0; i--) {
+      const d = state.entries[i].description;
+      if (!d || seen.has(d)) continue;
+      seen.add(d);
+      items.push(d);
+    }
+    return items;
+  }
+
+  function paginateByDay(sortedEntries, pageSize) {
+    const dayGroups = [];
+    let currentDay = null;
+    let currentList = null;
+    for (const e of sortedEntries) {
+      if (e.date !== currentDay) {
+        currentDay = e.date;
+        currentList = [];
+        dayGroups.push(currentList);
+      }
+      currentList.push(e);
+    }
+    const pages = [];
+    let page = [];
+    let count = 0;
+    for (const group of dayGroups) {
+      if (count > 0 && count + group.length > pageSize) {
+        pages.push(page);
+        page = [];
+        count = 0;
+      }
+      page.push(...group);
+      count += group.length;
+    }
+    if (page.length > 0) pages.push(page);
+    if (pages.length === 0) pages.push([]);
+    return pages;
+  }
+
+  function render() {
+    const sorted = [...state.entries].sort((a, b) => entrySortKey(b).localeCompare(entrySortKey(a)));
+    const total = sorted.length;
+    const pages = paginateByDay(sorted, state.pageSize);
+    const totalPages = pages.length;
+    if (state.page > totalPages) state.page = totalPages;
+    if (state.page < 1) state.page = 1;
+    const pageItems = pages[state.page - 1] || [];
+
+    container.innerHTML = '';
+    if (pageItems.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'No time entries yet. Add your first one above.';
+      container.appendChild(empty);
+    } else {
+      // week -> day -> entries
+      const weeks = new Map();
+      for (const e of pageItems) {
+        const wk = weekStartIso(e.date);
+        if (!weeks.has(wk)) weeks.set(wk, new Map());
+        const days = weeks.get(wk);
+        if (!days.has(e.date)) days.set(e.date, []);
+        days.get(e.date).push(e);
+      }
+      for (const [wkStart, days] of weeks) {
+        const weekEl = document.createElement('div');
+        weekEl.className = 'week-group';
+        let wkTotal = 0;
+        for (const items of days.values()) {
+          wkTotal += items.reduce((s, e) => s + (e.duration || 0), 0);
+        }
+        const wkHeader = document.createElement('div');
+        wkHeader.className = 'week-header';
+        wkHeader.innerHTML = `<span class="week-label">${formatWeekLabel(wkStart)}</span><span class="week-total-line">Week total: <strong>${formatDuration(wkTotal)}</strong></span>`;
+        weekEl.appendChild(wkHeader);
+        for (const [date, items] of days) {
+          const dayEl = document.createElement('div');
+          dayEl.className = 'day-group';
+          const dayTotal = items.reduce((s, e) => s + (e.duration || 0), 0);
+          const header = document.createElement('div');
+          header.className = 'day-header';
+          header.innerHTML = `<span>${formatDate(date)}</span><span>Total: <span class="day-total">${formatDuration(dayTotal)}</span></span>`;
+          dayEl.appendChild(header);
+          for (const entry of items) dayEl.appendChild(renderEntryRow(entry));
+          weekEl.appendChild(dayEl);
+        }
+        container.appendChild(weekEl);
+      }
+    }
+
+    pageInfo.textContent = `${state.page} / ${totalPages} · ${total} ${total === 1 ? 'entry' : 'entries'}`;
+    prevBtn.disabled = state.page <= 1;
+    nextBtn.disabled = state.page >= totalPages;
+  }
+
+  function mountApp() {
+    document.getElementById('appRoot').classList.remove('hidden');
+    container = document.getElementById('entriesContainer');
+    pageSizeSel = document.getElementById('pageSize');
+    pageInfo = document.getElementById('pageInfo');
+    prevBtn = document.getElementById('prevPage');
+    nextBtn = document.getElementById('nextPage');
+
+    const offered = [...pageSizeSel.options].map(o => parseInt(o.value, 10));
+    if (!offered.includes(state.pageSize)) {
+      const opt = document.createElement('option');
+      opt.value = String(state.pageSize);
+      opt.textContent = String(state.pageSize);
+      pageSizeSel.appendChild(opt);
+    }
+    pageSizeSel.value = String(state.pageSize);
+    pageSizeSel.addEventListener('change', async () => {
+      state.pageSize = parseInt(pageSizeSel.value, 10);
+      state.page = 1;
+      await persist();
+      render();
+    });
+    prevBtn.addEventListener('click', () => { state.page--; render(); });
+    nextBtn.addEventListener('click', () => { state.page++; render(); });
+
+    bindForm();
+    resetForm();
+    render();
+  }
+
+  document.getElementById('changeFileBtn').addEventListener('click', () => {
+    showSetupOverlay();
+  });
+
+  // ---------- Calendar popup ----------
+  const cal = {
+    popup: null,
+    activeInput: null,
+    viewYear: 0,
+    viewMonth: 0,
+    init() {
+      this.popup = document.createElement('div');
+      this.popup.className = 'cal-popup hidden';
+      document.body.appendChild(this.popup);
+      document.addEventListener('click', (e) => {
+        if (this.popup.classList.contains('hidden')) return;
+        if (this.popup.contains(e.target)) return;
+        if (e.target.closest && e.target.closest('.date-trigger')) return;
+        this.close();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') this.close();
+      });
+      window.addEventListener('scroll', () => this.close(), true);
+      window.addEventListener('resize', () => this.close());
+    },
+    open(input) {
+      this.activeInput = input;
+      const iso = displayToIsoDate(input.value) || todayISO();
+      const [y, m] = iso.split('-').map(Number);
+      this.viewYear = y;
+      this.viewMonth = m - 1;
+      this.popup.classList.remove('hidden');
+      this.render();
+      const rect = input.getBoundingClientRect();
+      const popupRect = this.popup.getBoundingClientRect();
+      let left = rect.left + window.scrollX;
+      const maxLeft = window.scrollX + document.documentElement.clientWidth - popupRect.width - 8;
+      if (left > maxLeft) left = maxLeft;
+      this.popup.style.left = left + 'px';
+      this.popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+    },
+    close() {
+      this.popup.classList.add('hidden');
+      this.activeInput = null;
+    },
+    render() {
+      const y = this.viewYear, m = this.viewMonth;
+      const firstDay = new Date(y, m, 1);
+      const dow = (firstDay.getDay() + 6) % 7;
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const monthName = firstDay.toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+      const selected = this.activeInput ? displayToIsoDate(this.activeInput.value) : null;
+      const todayIso = todayISO();
+
+      let html = `
+        <div class="cal-header">
+          <button type="button" class="cal-nav" data-act="prev">‹</button>
+          <span class="cal-title">${monthName}</span>
+          <button type="button" class="cal-nav" data-act="next">›</button>
+        </div>
+        <div class="cal-grid">
+      `;
+      for (const d of ['Mo','Tu','We','Th','Fr','Sa','Su']) {
+        html += `<div class="cal-dow">${d}</div>`;
+      }
+      for (let i = 0; i < dow; i++) html += '<div></div>';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateIso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const classes = ['cal-day'];
+        if (dateIso === selected) classes.push('selected');
+        if (dateIso === todayIso) classes.push('today');
+        html += `<button type="button" class="${classes.join(' ')}" data-iso="${dateIso}">${d}</button>`;
+      }
+      html += '</div>';
+      html += `<div class="cal-footer"><button type="button" class="cal-today" data-act="today">Today</button></div>`;
+      this.popup.innerHTML = html;
+
+      this.popup.querySelector('[data-act="prev"]').onclick = (e) => {
+        e.stopPropagation();
+        this.viewMonth--; if (this.viewMonth < 0) { this.viewMonth = 11; this.viewYear--; }
+        this.render();
+      };
+      this.popup.querySelector('[data-act="next"]').onclick = (e) => {
+        e.stopPropagation();
+        this.viewMonth++; if (this.viewMonth > 11) { this.viewMonth = 0; this.viewYear++; }
+        this.render();
+      };
+      this.popup.querySelectorAll('[data-iso]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const iso = btn.dataset.iso;
+          if (!this.activeInput) return;
+          this.activeInput.value = isoToDisplayDate(iso);
+          this.activeInput.dispatchEvent(new Event('change', { bubbles: true }));
+          this.close();
+        };
+      });
+      this.popup.querySelector('[data-act="today"]').onclick = (e) => {
+        e.stopPropagation();
+        if (!this.activeInput) return;
+        this.activeInput.value = isoToDisplayDate(todayISO());
+        this.activeInput.dispatchEvent(new Event('change', { bubbles: true }));
+        this.close();
+      };
+    },
+  };
+  cal.init();
+
+  document.body.addEventListener('click', (e) => {
+    const trigger = e.target.closest && e.target.closest('.date-trigger');
+    if (!trigger) return;
+    const input = trigger.parentElement.querySelector('.date-input');
+    if (!input) return;
+    if (cal.activeInput === input) {
+      cal.close();
+    } else {
+      cal.open(input);
+    }
+  });
+
+  // ---------- Description suggestions ----------
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function escapeReg(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  const suggest = {
+    popup: null,
+    activeInput: null,
+    items: [],
+    highlight: -1,
+    init() {
+      this.popup = document.createElement('div');
+      this.popup.className = 'sug-popup hidden';
+      document.body.appendChild(this.popup);
+      document.addEventListener('mousedown', (e) => {
+        if (this.popup.classList.contains('hidden')) return;
+        if (this.popup.contains(e.target)) return;
+        if (e.target === this.activeInput) return;
+        this.close();
+      });
+      window.addEventListener('scroll', () => this.close(), true);
+      window.addEventListener('resize', () => this.activeInput && this.position());
+    },
+    open(input) {
+      this.activeInput = input;
+      this.update();
+    },
+    update() {
+      if (!this.activeInput) return;
+      const query = (this.activeInput.value || '').trim();
+      const all = uniqueDescriptions();
+      const q = query.toLowerCase();
+      let items;
+      if (!q) {
+        items = all.slice(0, 10);
+      } else {
+        items = all.filter(d => d.toLowerCase().includes(q) && d.toLowerCase() !== q).slice(0, 10);
+      }
+      this.items = items;
+      if (items.length === 0) { this.close(); return; }
+      this.highlight = -1;
+      this.popup.classList.remove('hidden');
+      this.render(query);
+      this.position();
+    },
+    position() {
+      if (!this.activeInput) return;
+      const rect = this.activeInput.getBoundingClientRect();
+      this.popup.style.left = (rect.left + window.scrollX) + 'px';
+      this.popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+      this.popup.style.width = rect.width + 'px';
+    },
+    render(query) {
+      const q = (query || '').trim();
+      const re = q ? new RegExp('(' + escapeReg(q) + ')', 'ig') : null;
+      let html = '';
+      this.items.forEach((item, i) => {
+        const classes = ['sug-item'];
+        if (i === this.highlight) classes.push('active');
+        const safe = escapeHtml(item);
+        const display = re ? safe.replace(re, '<span class="match">$1</span>') : safe;
+        html += `<button type="button" class="${classes.join(' ')}" data-idx="${i}">${display}</button>`;
+      });
+      this.popup.innerHTML = html;
+      this.popup.querySelectorAll('[data-idx]').forEach(btn => {
+        btn.onmousedown = (e) => {
+          e.preventDefault();
+          this.choose(parseInt(btn.dataset.idx, 10));
+        };
+      });
+    },
+    choose(idx) {
+      if (!this.activeInput || idx < 0 || idx >= this.items.length) return;
+      this.activeInput.value = this.items[idx];
+      this.activeInput.dispatchEvent(new Event('input', { bubbles: true }));
+      this.activeInput.dispatchEvent(new Event('change', { bubbles: true }));
+      this.close();
+    },
+    close() {
+      this.popup.classList.add('hidden');
+      this.activeInput = null;
+      this.items = [];
+      this.highlight = -1;
+    },
+    handleKey(e) {
+      if (this.popup.classList.contains('hidden')) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        this.highlight = Math.min(this.items.length - 1, this.highlight + 1);
+        this.render(this.activeInput.value);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        this.highlight = Math.max(-1, this.highlight - 1);
+        this.render(this.activeInput.value);
+      } else if (e.key === 'Enter' && this.highlight >= 0) {
+        e.preventDefault();
+        this.choose(this.highlight);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        this.close();
+      } else if (e.key === 'Tab') {
+        this.close();
+      }
+    },
+  };
+  suggest.init();
+
+  function isDescriptionInput(el) {
+    if (!el || el.tagName !== 'INPUT') return false;
+    return el.name === 'description' || el.dataset.field === 'description';
+  }
+
+  document.body.addEventListener('focusin', (e) => {
+    if (!isDescriptionInput(e.target)) return;
+    suggest.open(e.target);
+  });
+  document.body.addEventListener('input', (e) => {
+    if (suggest.activeInput !== e.target) return;
+    suggest.update();
+  });
+  document.body.addEventListener('keydown', (e) => {
+    if (suggest.activeInput !== e.target) return;
+    suggest.handleKey(e);
+  });
+
+  async function startServerMode(data) {
+    mode = 'server';
+    applyData(data);
+    document.getElementById('fileName').textContent = 'data.json';
+    document.getElementById('changeFileBtn').classList.add('hidden');
+    document.getElementById('fileInfo').classList.remove('hidden');
+    if (state.projects.length === 0) {
+      showFirstProjectOverlay();
+    } else {
+      hideOverlay();
+      mountApp();
+    }
+  }
+
+  async function tryServerMode() {
+    if (location.protocol === 'file:') return false;
+    try {
+      const res = await fetch('/api/data', { method: 'GET' });
+      if (!res.ok) return false;
+      const data = await res.json();
+      await startServerMode(data);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // ---------- Reports ----------
+  const PROJECT_COLORS = ['#03a9f4', '#4caf50', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4', '#ffeb3b', '#8bc34a', '#ff5722', '#673ab7'];
+  function colorForIndex(i) { return PROJECT_COLORS[i % PROJECT_COLORS.length]; }
+
+  function dateToIso(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function getReportRange(key) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const t = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+    switch (key) {
+      case 'this-week': {
+        const dow = (today.getDay() + 6) % 7;
+        const start = new Date(today); start.setDate(today.getDate() - dow);
+        const end = new Date(start); end.setDate(start.getDate() + 6);
+        return [start, end];
+      }
+      case 'last-week': {
+        const dow = (today.getDay() + 6) % 7;
+        const end = new Date(today); end.setDate(today.getDate() - dow - 1);
+        const start = new Date(end); start.setDate(end.getDate() - 6);
+        return [start, end];
+      }
+      case 'this-month':
+        return [new Date(today.getFullYear(), today.getMonth(), 1), new Date(today.getFullYear(), today.getMonth() + 1, 0)];
+      case 'last-month':
+        return [new Date(today.getFullYear(), today.getMonth() - 1, 1), new Date(today.getFullYear(), today.getMonth(), 0)];
+      case 'last-30': {
+        const start = new Date(today); start.setDate(today.getDate() - 29);
+        return [start, t(today)];
+      }
+      case 'this-year':
+        return [new Date(today.getFullYear(), 0, 1), new Date(today.getFullYear(), 11, 31)];
+      case 'last-year':
+        return [new Date(today.getFullYear() - 1, 0, 1), new Date(today.getFullYear() - 1, 11, 31)];
+      case 'custom': {
+        const fromIso = displayToIsoDate(document.getElementById('rangeFrom').value);
+        const toIso = displayToIsoDate(document.getElementById('rangeTo').value);
+        if (!fromIso || !toIso) return getReportRange('this-month');
+        const from = new Date(fromIso + 'T00:00:00');
+        const to = new Date(toIso + 'T00:00:00');
+        return from <= to ? [from, to] : [to, from];
+      }
+      case 'all':
+      default: {
+        if (state.entries.length === 0) return [today, today];
+        const dates = state.entries.map(e => e.date).sort();
+        return [new Date(dates[0] + 'T00:00:00'), new Date(dates[dates.length - 1] + 'T00:00:00')];
+      }
+    }
+  }
+
+  function formatShortDate(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+
+  function renderBarChart(svg, data) {
+    const W = 800, H = 280;
+    const padTop = 24, padBottom = 44, padLeft = 56, padRight = 16;
+    const chartW = W - padLeft - padRight;
+    const chartH = H - padTop - padBottom;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+    if (data.length === 0 || data.every(d => d.minutes === 0)) {
+      svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#8a8fa3" font-size="14">No data for this range</text>`;
+      return;
+    }
+
+    const maxMinutes = Math.max(...data.map(d => d.minutes));
+    const niceMax = Math.max(60, Math.ceil(maxMinutes / 60) * 60);
+    const stepCount = 4;
+    const stepMin = Math.ceil(niceMax / stepCount / 60) * 60;
+    const yMax = stepMin * stepCount;
+
+    const barSlot = chartW / data.length;
+    const barW = Math.max(2, Math.min(40, barSlot * 0.7));
+
+    let html = '';
+    for (let m = 0; m <= yMax; m += stepMin) {
+      const y = padTop + chartH - (m / yMax) * chartH;
+      html += `<line x1="${padLeft}" y1="${y}" x2="${W - padRight}" y2="${y}" stroke="rgba(255,255,255,0.06)" />`;
+      html += `<text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" fill="#8a8fa3" font-size="11">${formatDuration(m)}</text>`;
+    }
+
+    const labelEvery = Math.max(1, Math.ceil(data.length / 12));
+    data.forEach((d, i) => {
+      const cx = padLeft + i * barSlot + barSlot / 2;
+      const x = cx - barW / 2;
+      const h = (d.minutes / yMax) * chartH;
+      const y = padTop + chartH - h;
+      if (d.minutes > 0) {
+        html += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="#03a9f4" rx="2"><title>${formatShortDate(d.date)}: ${formatDuration(d.minutes)}</title></rect>`;
+      }
+      if (i % labelEvery === 0 || i === data.length - 1) {
+        html += `<text x="${cx}" y="${H - padBottom + 16}" text-anchor="middle" fill="#8a8fa3" font-size="11">${formatShortDate(d.date)}</text>`;
+      }
+    });
+    svg.innerHTML = html;
+  }
+
+  function renderDonut(svg, items, total) {
+    const S = 200, cx = 100, cy = 100, r = 80, ir = 54;
+    let html = '';
+    if (!total || items.length === 0) {
+      html = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#34374f" stroke-width="${r-ir}" />`;
+      html += `<text x="${cx}" y="${cy + 6}" text-anchor="middle" fill="#8a8fa3" font-size="14">No data</text>`;
+      svg.innerHTML = html;
+      return;
+    }
+    if (items.length === 1) {
+      html += `<circle cx="${cx}" cy="${cy}" r="${(r+ir)/2}" fill="none" stroke="${colorForIndex(0)}" stroke-width="${r-ir}" />`;
+    } else {
+      let start = -Math.PI / 2;
+      items.forEach((item, i) => {
+        const portion = item.minutes / total;
+        const end = start + portion * Math.PI * 2;
+        const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
+        const x2 = cx + r * Math.cos(end),   y2 = cy + r * Math.sin(end);
+        const x3 = cx + ir * Math.cos(end),  y3 = cy + ir * Math.sin(end);
+        const x4 = cx + ir * Math.cos(start),y4 = cy + ir * Math.sin(start);
+        const large = portion > 0.5 ? 1 : 0;
+        html += `<path d="M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${x3} ${y3} A ${ir} ${ir} 0 ${large} 0 ${x4} ${y4} Z" fill="${colorForIndex(i)}"><title>${escapeHtml(item.project)}: ${formatDuration(item.minutes)}</title></path>`;
+        start = end;
+      });
+    }
+    html += `<text x="${cx}" y="${cy + 6}" text-anchor="middle" fill="#e6e8f0" font-size="18" font-weight="600">${formatDuration(total)}</text>`;
+    svg.innerHTML = html;
+  }
+
+  function renderReport() {
+    const rangeKey = document.getElementById('reportRange').value;
+    const [start, end] = getReportRange(rangeKey);
+    const startIso = dateToIso(start), endIso = dateToIso(end);
+    const inRange = state.entries.filter(e => e.date >= startIso && e.date <= endIso);
+    const totalMins = inRange.reduce((s, e) => s + (e.duration || 0), 0);
+    document.getElementById('reportTotal').textContent = formatDuration(totalMins);
+
+    const dailyMap = new Map();
+    for (const e of inRange) dailyMap.set(e.date, (dailyMap.get(e.date) || 0) + (e.duration || 0));
+    const daily = [];
+    if (rangeKey === 'all') {
+      [...dailyMap.keys()].sort().forEach(d => daily.push({ date: d, minutes: dailyMap.get(d) }));
+      if (daily.length === 0) daily.push({ date: dateToIso(new Date()), minutes: 0 });
+    } else {
+      const d = new Date(start);
+      while (d <= end) {
+        const iso = dateToIso(d);
+        daily.push({ date: iso, minutes: dailyMap.get(iso) || 0 });
+        d.setDate(d.getDate() + 1);
+      }
+    }
+    renderBarChart(document.getElementById('reportChart'), daily);
+
+    const projMap = new Map();
+    for (const e of inRange) {
+      const p = e.project || '(no project)';
+      projMap.set(p, (projMap.get(p) || 0) + (e.duration || 0));
+    }
+    const projRows = [...projMap.entries()].sort((a, b) => b[1] - a[1]).map(([project, minutes]) => ({ project, minutes }));
+    const tbody = document.getElementById('reportProjectBody');
+    if (projRows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:1.25rem;">No entries in this range</td></tr>`;
+    } else {
+      tbody.innerHTML = projRows.map((row, i) => {
+        const pct = totalMins > 0 ? Math.round(row.minutes / totalMins * 100) : 0;
+        return `<tr>
+          <td><span class="proj-dot" style="background:${colorForIndex(i)}"></span>${escapeHtml(row.project)}</td>
+          <td class="num">${formatDuration(row.minutes)}</td>
+          <td class="num">${pct}%</td>
+        </tr>`;
+      }).join('');
+    }
+    renderDonut(document.getElementById('reportDonut'), projRows, totalMins);
+  }
+
+  // ---------- Tab switching ----------
+  function switchView(view) {
+    document.querySelectorAll('#viewTabs .tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.view === view);
+    });
+    document.getElementById('trackerView').classList.toggle('hidden', view !== 'tracker');
+    document.getElementById('reportsView').classList.toggle('hidden', view !== 'reports');
+    if (view === 'reports') renderReport();
+  }
+  document.getElementById('viewTabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    switchView(tab.dataset.view);
+  });
+  const reportRangeEl = document.getElementById('reportRange');
+  const customRangeEl = document.getElementById('customRange');
+  const rangeFromEl = document.getElementById('rangeFrom');
+  const rangeToEl = document.getElementById('rangeTo');
+  reportRangeEl.addEventListener('change', () => {
+    if (reportRangeEl.value === 'custom') {
+      customRangeEl.classList.remove('hidden');
+      // Seed inputs if empty
+      if (!displayToIsoDate(rangeFromEl.value) || !displayToIsoDate(rangeToEl.value)) {
+        const today = new Date();
+        const first = new Date(today.getFullYear(), today.getMonth(), 1);
+        rangeFromEl.value = isoToDisplayDate(dateToIso(first));
+        rangeToEl.value = isoToDisplayDate(dateToIso(today));
+      }
+    } else {
+      customRangeEl.classList.add('hidden');
+    }
+    renderReport();
+  });
+  const onCustomDateChange = () => {
+    if (reportRangeEl.value !== 'custom') reportRangeEl.value = 'custom';
+    customRangeEl.classList.remove('hidden');
+    renderReport();
+  };
+  rangeFromEl.addEventListener('change', onCustomDateChange);
+  rangeToEl.addEventListener('change', onCustomDateChange);
+
+  // ---------- Startup ----------
+  async function startup() {
+    if (await tryServerMode()) return;
+
+    if (!('showSaveFilePicker' in window) || !('showOpenFilePicker' in window)) {
+      const runServerInstructions =
+        '<p>For the easiest setup, run the included server (works in any browser):</p>' +
+        '<pre style="background:var(--surface-2);padding:0.625rem;border-radius:var(--radius);margin-top:0.375rem;font-size:0.75rem;overflow:auto;color:var(--text);">node server.js</pre>' +
+        '<p>Then open <code>http://localhost:13001</code>.</p>';
+      if (location.protocol === 'file:') {
+        showFatal(
+          '<p>Workify can\'t persist data when opened directly from disk (<code>file://</code>).</p>' +
+          runServerInstructions +
+          '<p style="margin-top:0.875rem;">Or, in Chrome/Edge, serve this folder over <code>http://localhost</code> with any static server to enable the File System Access API.</p>',
+          'Run the local server'
+        );
+      } else {
+        showFatal(
+          '<p>This browser doesn\'t expose the File System Access API.</p>' +
+          runServerInstructions +
+          '<p style="margin-top:0.875rem;">Or open this URL in Chrome/Edge/Opera to use the file-picker mode instead.</p>',
+          'Use the local server, or switch browsers'
+        );
+      }
+      return;
+    }
+
+    mode = 'fsa';
+    try {
+      const stored = await idbGet(HANDLE_KEY);
+      if (stored) {
+        if (await hasPermission(stored)) {
+          fileHandle = stored;
+          await loadFromFile();
+          await afterStorageReady();
+          return;
+        }
+        showReconnectOverlay(stored);
+        return;
+      }
+    } catch (err) {
+      console.warn('Startup error', err);
+    }
+    showSetupOverlay();
+  }
+
+  startup();
+})();
+</script>
+</body>
+</html>

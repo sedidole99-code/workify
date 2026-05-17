@@ -1,0 +1,22 @@
+{
+  "entries": [
+    { "id": "demo-01", "description": "Sprint planning", "project": "Acme Corp", "startTime": "09:00", "endTime": "10:30", "date": "2026-05-04", "duration": 90 },
+    { "id": "demo-02", "description": "Implement login flow", "project": "Acme Corp", "startTime": "11:00", "endTime": "14:00", "date": "2026-05-04", "duration": 180 },
+    { "id": "demo-03", "description": "Code review", "project": "Internal", "startTime": "09:00", "endTime": "10:00", "date": "2026-05-06", "duration": 60 },
+    { "id": "demo-04", "description": "Bug fix: pagination edge case", "project": "Acme Corp", "startTime": "10:00", "endTime": "12:30", "date": "2026-05-06", "duration": 150 },
+    { "id": "demo-05", "description": "Daily standup", "project": "Internal", "startTime": "09:00", "endTime": "09:15", "date": "2026-05-08", "duration": 15 },
+    { "id": "demo-06", "description": "Refactor cart module", "project": "Acme Corp", "startTime": "09:30", "endTime": "13:00", "date": "2026-05-08", "duration": 210 },
+    { "id": "demo-07", "description": "Documentation update", "project": "Internal", "startTime": "14:00", "endTime": "15:30", "date": "2026-05-08", "duration": 90 },
+    { "id": "demo-08", "description": "Pair programming session", "project": "Acme Corp", "startTime": "10:00", "endTime": "12:00", "date": "2026-05-12", "duration": 120 },
+    { "id": "demo-09", "description": "Investigate flaky test", "project": "Internal", "startTime": "13:00", "endTime": "14:30", "date": "2026-05-12", "duration": 90 },
+    { "id": "demo-10", "description": "Deploy release", "project": "Acme Corp", "startTime": "09:00", "endTime": "10:00", "date": "2026-05-14", "duration": 60 },
+    { "id": "demo-11", "description": "Customer call", "project": "Acme Corp", "startTime": "11:00", "endTime": "12:00", "date": "2026-05-14", "duration": 60 },
+    { "id": "demo-12", "description": "Performance profiling", "project": "Internal", "startTime": "13:30", "endTime": "16:00", "date": "2026-05-14", "duration": 150 },
+    { "id": "demo-13", "description": "Side project work", "project": "Personal", "startTime": "20:00", "endTime": "22:30", "date": "2026-05-15", "duration": 150 },
+    { "id": "demo-14", "description": "Bug investigation", "project": "Acme Corp", "startTime": "09:00", "endTime": "11:00", "date": "2026-05-15", "duration": 120 },
+    { "id": "demo-15", "description": "Side project work", "project": "Personal", "startTime": "10:00", "endTime": "12:30", "date": "2026-05-17", "duration": 150 }
+  ],
+  "projects": ["Acme Corp", "Internal", "Personal"],
+  "lastProject": "Personal",
+  "pageSize": 50
+}

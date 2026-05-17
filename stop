@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Workify — stop the running server (if any).
+
+if pgrep -f 'workify/server\.js' >/dev/null 2>&1; then
+  pkill -f 'workify/server\.js'
+  echo "Workify stopped"
+else
+  echo "No Workify server was running"
+fi
