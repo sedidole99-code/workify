@@ -92,6 +92,9 @@
     border-radius: var(--radius-md);
     padding: 0.625rem;
     margin-bottom: 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 50;
   }
   .entry-bar input,
   .entry-bar select,
@@ -990,12 +993,8 @@
     const lastMonday = new Date(thisMonday); lastMonday.setDate(thisMonday.getDate() - 7);
     if (monday.getTime() === thisMonday.getTime()) return 'This week';
     if (monday.getTime() === lastMonday.getTime()) return 'Last week';
-    const sameYear = monday.getFullYear() === sunday.getFullYear();
-    const sameMonth = sameYear && monday.getMonth() === sunday.getMonth();
     const fmtFull = (d) => d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
-    const fmtDay  = (d) => d.toLocaleDateString('en-GB', { day: 'numeric' });
     const yearSuffix = monday.getFullYear() !== today.getFullYear() ? `, ${monday.getFullYear()}` : '';
-    if (sameMonth) return `${fmtFull(monday)} - ${fmtDay(sunday)}${yearSuffix}`;
     return `${fmtFull(monday)} - ${fmtFull(sunday)}${yearSuffix}`;
   }
 
@@ -1495,9 +1494,9 @@
       const q = query.toLowerCase();
       let items;
       if (!q) {
-        items = all.slice(0, 10);
+        items = all.slice(0, 7);
       } else {
-        items = all.filter(d => d.toLowerCase().includes(q) && d.toLowerCase() !== q).slice(0, 10);
+        items = all.filter(d => d.toLowerCase().includes(q) && d.toLowerCase() !== q).slice(0, 7);
       }
       this.items = items;
       if (items.length === 0) { this.close(); return; }

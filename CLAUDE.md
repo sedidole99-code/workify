@@ -18,6 +18,14 @@ node import-clockify.js <csv> [csv …]  # import Clockify Detailed exports → 
 
 The `start`/`stop` scripts are wired into the shell as `workify` / `workify-stop` (`~/.bash_aliases`), and `autostart.sh` is called from `~/.bashrc` so the server is up by the time any terminal is open. All hooks delegate to scripts in this folder — the project owns its lifecycle.
 
+## Session backups
+
+At the start of every Claude Code session in this repo, snapshot `data.json` to `bak/data-DD-MM-YYYY.json` (today's date in DD-MM-YYYY, matching the project's display convention). One backup per day — re-opening the same day overwrites the file. The `bak/` directory is gitignored.
+
+```bash
+cp data.json "bak/data-$(date +%d-%m-%Y).json"
+```
+
 ## Architecture
 
 ### Static SPA + tiny JSON server (dual mode)
