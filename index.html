@@ -419,18 +419,60 @@
     border-bottom-left-radius: var(--radius-md);
     border-bottom-right-radius: var(--radius-md);
   }
+  .entry-row.overlap {
+    background: rgba(231, 76, 60, 0.08);
+    box-shadow: inset 3px 0 0 var(--danger);
+  }
+  .entry-row.overlap .time-range { color: var(--danger); }
+  .entry-row.overlap .time-input { border-color: var(--danger); }
+  .entry-row.gap { border-bottom-color: rgba(255, 255, 255, 0.42); }
 
-  .entry-row .delete-btn {
+  .entry-row .row-actions { display: flex; align-items: center; gap: 0.125rem; }
+  .entry-row .delete-btn,
+  .entry-row .edit-btn {
     background: transparent;
     border: none;
     color: var(--muted);
     cursor: pointer;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     line-height: 1;
-    padding: 0.25rem 0.625rem;
+    padding: 0.25rem 0.5rem;
     border-radius: var(--radius);
   }
+  .entry-row .delete-btn { font-size: 1.25rem; padding: 0.25rem 0.625rem; }
   .entry-row .delete-btn:hover { color: var(--danger); background: var(--surface-2); }
+  .entry-row .edit-btn:hover { color: var(--accent); background: var(--surface-2); }
+
+  /* Time-adjust modal */
+  .time-adjust-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.25rem; }
+  .op-toggle { display: flex; }
+  .op-btn,
+  .target-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem 0.875rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-family: inherit;
+    line-height: 1;
+  }
+  .op-btn { font-size: 1rem; }
+  .op-toggle > :first-child { border-radius: var(--radius) 0 0 var(--radius); border-right: none; }
+  .op-toggle > :last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+  .op-btn.active,
+  .target-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .op-btn:not(.active):hover,
+  .target-btn:not(.active):hover { border-color: var(--accent); }
+  .overlay-card input[type=text].time-adjust-input {
+    width: 5rem;
+    margin-bottom: 0;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    padding: 0.5rem 0.75rem;
+  }
+  .time-adjust-meta { color: var(--muted); font-size: 0.8125rem; margin-bottom: 0.875rem; }
+  .time-adjust-meta strong { color: var(--text); font-weight: 600; }
 
   .empty {
     text-align: center;
@@ -594,9 +636,11 @@
       </select>
     </label>
     <div class="page-controls">
+      <button id="firstPage" type="button" title="First page">«</button>
       <button id="prevPage" type="button">‹ Prev</button>
       <span id="pageInfo">1 / 1</span>
       <button id="nextPage" type="button">Next ›</button>
+      <button id="lastPage" type="button" title="Last page">»</button>
     </div>
   </footer>
   </section>
@@ -1134,15 +1178,54 @@
   }
 
   // ---------- Render entries ----------
-  let container, pageSizeSel, pageInfo, prevBtn, nextBtn;
+  let container, pageSizeSel, pageInfo, prevBtn, nextBtn, firstBtn, lastBtn;
 
   function entrySortKey(e) {
     return e.date + ' ' + (e.startTime || '00:00') + ' ' + e.id;
   }
 
-  function renderEntryRow(entry) {
+  function findOverlapIds(items) {
+    const overlapping = new Set();
+    const ranges = items.map(e => {
+      const s = timeToMinutes(e.startTime);
+      const d = e.duration || calcDuration(e.startTime, e.endTime);
+      return { id: e.id, start: s, end: s + d };
+    });
+    for (let i = 0; i < ranges.length; i++) {
+      for (let j = i + 1; j < ranges.length; j++) {
+        const a = ranges[i], b = ranges[j];
+        if (a.start < b.end && b.start < a.end) {
+          overlapping.add(a.id);
+          overlapping.add(b.id);
+        }
+      }
+    }
+    return overlapping;
+  }
+
+  function findGapIds(items) {
+    const gaps = new Map();
+    if (items.length < 2) return gaps;
+    const sorted = items.slice().sort((a, b) =>
+      timeToMinutes(a.startTime) - timeToMinutes(b.startTime) || a.id.localeCompare(b.id)
+    );
+    for (let i = 1; i < sorted.length; i++) {
+      const gap = timeToMinutes(sorted[i].startTime) - timeToMinutes(sorted[i - 1].endTime);
+      if (gap > 1) gaps.set(sorted[i].id, gap);
+    }
+    return gaps;
+  }
+
+  function renderEntryRow(entry, isOverlap, gapMinutes) {
     const row = document.createElement('div');
-    row.className = 'entry-row';
+    let cls = 'entry-row';
+    if (isOverlap) cls += ' overlap';
+    if (gapMinutes) cls += ' gap';
+    row.className = cls;
+    const titles = [];
+    if (isOverlap) titles.push('Time overlaps with another entry on this day');
+    if (gapMinutes) titles.push(`${gapMinutes}-minute gap from previous entry`);
+    if (titles.length) row.title = titles.join(' · ');
     row.dataset.id = entry.id;
     row.innerHTML = `
       <input type="text" data-field="description" autocomplete="off">
@@ -1159,7 +1242,10 @@
         </button>
       </div>
       <input type="text" data-field="duration" class="duration-input" value="${formatDuration(entry.duration)}" pattern="^\\d{1,3}:[0-5][0-9]$" title="HH:MM">
-      <button type="button" class="delete-btn" title="Delete">×</button>
+      <div class="row-actions">
+        <button type="button" class="edit-btn" title="Adjust time (±)">±</button>
+        <button type="button" class="delete-btn" title="Delete">×</button>
+      </div>
     `;
     row.querySelector('[data-field="description"]').value = entry.description;
     const sel = row.querySelector('[data-field="project"]');
@@ -1202,6 +1288,9 @@
       await persist();
       render();
     });
+    row.querySelector('.edit-btn').addEventListener('click', () => {
+      openTimeAdjustModal(entry);
+    });
     row.querySelector('.delete-btn').addEventListener('click', async () => {
       if (!confirm('Delete this entry?')) return;
       state.entries = state.entries.filter(e => e.id !== entry.id);
@@ -1209,6 +1298,98 @@
       render();
     });
     return row;
+  }
+
+  function adjustEntryTime(entry, target, deltaMin) {
+    const startM = timeToMinutes(entry.startTime);
+    const endM = timeToMinutes(entry.endTime);
+    if (target === 'start') {
+      let newStartM = startM + deltaMin;
+      if (newStartM < 0) newStartM = 0;
+      if (newStartM > endM) newStartM = endM;
+      entry.startTime = minutesToTime(newStartM);
+      entry.duration = endM - newStartM;
+    } else {
+      let newEndM = endM + deltaMin;
+      if (newEndM < startM) newEndM = startM;
+      entry.endTime = minutesToTime(newEndM);
+      entry.duration = newEndM - startM;
+    }
+  }
+
+  let timeAdjustEscHandler = null;
+  function openTimeAdjustModal(entry) {
+    let op = '+';
+    let target = 'end';
+    const html = `
+      <h2>Adjust time</h2>
+      <div class="time-adjust-meta">
+        <strong>${entry.startTime}–${entry.endTime}</strong> · ${entry.description || '<em style="color:var(--muted)">(no description)</em>'}
+      </div>
+      <div class="time-adjust-row">
+        <div class="op-toggle">
+          <button type="button" data-op="+" class="op-btn active">+</button>
+          <button type="button" data-op="-" class="op-btn">−</button>
+        </div>
+        <div class="op-toggle">
+          <button type="button" data-target="start" class="target-btn">Start</button>
+          <button type="button" data-target="end" class="target-btn active">End</button>
+        </div>
+        <input type="text" id="timeAdjustInput" class="time-adjust-input" value="00:10" pattern="^\\d{1,3}:[0-5][0-9]$" placeholder="HH:MM" inputmode="numeric" maxlength="6">
+      </div>
+      <div class="actions">
+        <button type="button" id="timeAdjustApply" class="primary">Apply</button>
+        <button type="button" id="timeAdjustCancel">Cancel</button>
+      </div>
+    `;
+    showOverlay(html);
+    const input = document.getElementById('timeAdjustInput');
+    const opButtons = overlayCard.querySelectorAll('.op-btn');
+    opButtons.forEach(b => {
+      b.addEventListener('click', () => {
+        op = b.dataset.op;
+        opButtons.forEach(x => x.classList.toggle('active', x.dataset.op === op));
+        input.focus();
+      });
+    });
+    const targetButtons = overlayCard.querySelectorAll('.target-btn');
+    targetButtons.forEach(b => {
+      b.addEventListener('click', () => {
+        target = b.dataset.target;
+        targetButtons.forEach(x => x.classList.toggle('active', x.dataset.target === target));
+        input.focus();
+      });
+    });
+
+    const close = () => {
+      document.removeEventListener('keydown', timeAdjustEscHandler);
+      timeAdjustEscHandler = null;
+      hideOverlay();
+    };
+
+    const apply = async () => {
+      const mins = parseDuration(input.value);
+      if (mins == null || mins === 0) {
+        input.focus();
+        input.select();
+        return;
+      }
+      const delta = op === '+' ? mins : -mins;
+      adjustEntryTime(entry, target, delta);
+      await persist();
+      close();
+      render();
+    };
+
+    document.getElementById('timeAdjustApply').addEventListener('click', apply);
+    document.getElementById('timeAdjustCancel').addEventListener('click', close);
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') { ev.preventDefault(); apply(); }
+    });
+    timeAdjustEscHandler = (ev) => { if (ev.key === 'Escape') close(); };
+    document.addEventListener('keydown', timeAdjustEscHandler);
+
+    setTimeout(() => { input.focus(); input.select(); }, 0);
   }
 
   function uniqueDescriptions() {
@@ -1296,7 +1477,9 @@
           header.className = 'day-header';
           header.innerHTML = `<span>${formatDate(date)}</span><span>Total: <span class="day-total">${formatDuration(dayTotal)}</span></span>`;
           dayEl.appendChild(header);
-          for (const entry of items) dayEl.appendChild(renderEntryRow(entry));
+          const overlapIds = findOverlapIds(items);
+          const gapIds = findGapIds(items);
+          for (const entry of items) dayEl.appendChild(renderEntryRow(entry, overlapIds.has(entry.id), gapIds.get(entry.id)));
           weekEl.appendChild(dayEl);
         }
         container.appendChild(weekEl);
@@ -1304,8 +1487,10 @@
     }
 
     pageInfo.textContent = `${state.page} / ${totalPages} · ${total} ${total === 1 ? 'entry' : 'entries'}`;
+    firstBtn.disabled = state.page <= 1;
     prevBtn.disabled = state.page <= 1;
     nextBtn.disabled = state.page >= totalPages;
+    lastBtn.disabled = state.page >= totalPages;
   }
 
   function mountApp() {
@@ -1315,6 +1500,8 @@
     pageInfo = document.getElementById('pageInfo');
     prevBtn = document.getElementById('prevPage');
     nextBtn = document.getElementById('nextPage');
+    firstBtn = document.getElementById('firstPage');
+    lastBtn = document.getElementById('lastPage');
 
     const offered = [...pageSizeSel.options].map(o => parseInt(o.value, 10));
     if (!offered.includes(state.pageSize)) {
@@ -1330,8 +1517,10 @@
       await persist();
       render();
     });
+    firstBtn.addEventListener('click', () => { state.page = 1; render(); });
     prevBtn.addEventListener('click', () => { state.page--; render(); });
     nextBtn.addEventListener('click', () => { state.page++; render(); });
+    lastBtn.addEventListener('click', () => { state.page = Infinity; render(); });
 
     bindForm();
     resetForm();
