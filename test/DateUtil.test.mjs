@@ -183,3 +183,18 @@ test('DateUtil.formatShortDate', async (t) => {
     assert.ok(DateUtil.formatShortDate('2026-05-22').length > 0);
   });
 });
+
+test('DateUtil.formatFullDate', async (t) => {
+  await t.test('returns a non-empty locale string containing the year', () => {
+    const out = DateUtil.formatFullDate('2026-05-22');
+    assert.ok(out.length > 0);
+    assert.ok(out.includes('2026'));
+  });
+
+  await t.test('includes a weekday hint distinct from formatShortDate', () => {
+    const short = DateUtil.formatShortDate('2026-05-22');
+    const full = DateUtil.formatFullDate('2026-05-22');
+    assert.notEqual(short, full);
+    assert.ok(full.length > short.length);
+  });
+});

@@ -24,6 +24,21 @@ export class EntryGrouping {
     return overlapping;
   }
 
+  static findOverlapDates(items) {
+    const byDate = new Map();
+    for (const e of items) {
+      if (!e.date) continue;
+      if (!byDate.has(e.date)) byDate.set(e.date, []);
+      byDate.get(e.date).push(e);
+    }
+    const dates = new Set();
+    for (const [date, group] of byDate) {
+      if (group.length < 2) continue;
+      if (EntryGrouping.findOverlapIds(group).size > 0) dates.add(date);
+    }
+    return dates;
+  }
+
   static findGapIds(items) {
     const gaps = new Map();
     if (items.length < 2) return gaps;

@@ -1,12 +1,13 @@
 import { TimeUtil } from '../util/TimeUtil.js';
 import { DateUtil } from '../util/DateUtil.js';
 import { TextUtil } from '../util/TextUtil.js';
+import { EntryGrouping } from '../util/EntryGrouping.js';
 
 export class ReportsView {
   static #PROJECT_COLORS = ['#03a9f4', '#4caf50', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4', '#ffeb3b', '#8bc34a', '#ff5722', '#673ab7'];
 
 
-  constructor({ store, rangeSel, customRange, from, to, totalEl, chartSvg, donutSvg, tbody }) {
+  constructor({ store, rangeSel, customRange, from, to, totalEl, chartSvg, chartTip, donutSvg, tbody }) {
     this.store = store;
     this.rangeSel = rangeSel;
     this.customRange = customRange;
@@ -14,6 +15,7 @@ export class ReportsView {
     this.to = to;
     this.totalEl = totalEl;
     this.chartSvg = chartSvg;
+    this.chartTip = chartTip;
     this.donutSvg = donutSvg;
     this.tbody = tbody;
   }
@@ -40,6 +42,21 @@ export class ReportsView {
     };
     this.from.addEventListener('change', onCustom);
     this.to.addEventListener('change', onCustom);
+
+    if (this.chartTip) {
+      this.chartSvg.addEventListener('mousemove', (e) => this.#onChartMove(e));
+      this.chartSvg.addEventListener('mouseleave', () => { this.chartTip.hidden = true; });
+    }
+  }
+
+  #onChartMove(e) {
+    const target = e.target.closest('[data-tip]');
+    if (!target) { this.chartTip.hidden = true; return; }
+    const cardRect = this.chartSvg.parentElement.getBoundingClientRect();
+    this.chartTip.textContent = target.getAttribute('data-tip');
+    this.chartTip.style.left = (e.clientX - cardRect.left) + 'px';
+    this.chartTip.style.top = (e.clientY - cardRect.top) + 'px';
+    this.chartTip.hidden = false;
   }
 
   static #colorForIndex(i) {
@@ -127,7 +144,9 @@ export class ReportsView {
       const h = (d.minutes / yMax) * chartH;
       const y = padTop + chartH - h;
       if (d.minutes > 0) {
-        html += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="#03a9f4" rx="2"><title>${DateUtil.formatShortDate(d.date)}: ${TimeUtil.formatDuration(d.minutes)}</title></rect>`;
+        const fill = d.overlap ? '#e74c3c' : '#03a9f4';
+        const tip = `${DateUtil.formatFullDate(d.date)}: ${TimeUtil.formatDuration(d.minutes)}${d.overlap ? ' ⚠ overlap' : ''}`;
+        html += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${fill}" rx="2" data-tip="${tip}" />`;
       }
       if (i % labelEvery === 0 || i === data.length - 1) {
         html += `<text x="${cx}" y="${H - padBottom + 16}" text-anchor="middle" fill="#8a8fa3" font-size="11">${DateUtil.formatShortDate(d.date)}</text>`;
@@ -176,15 +195,16 @@ export class ReportsView {
 
     const dailyMap = new Map();
     for (const e of inRange) dailyMap.set(e.date, (dailyMap.get(e.date) || 0) + (e.duration || 0));
+    const overlapDates = EntryGrouping.findOverlapDates(inRange);
     const daily = [];
     if (rangeKey === 'all') {
-      [...dailyMap.keys()].sort().forEach(d => daily.push({ date: d, minutes: dailyMap.get(d) }));
-      if (daily.length === 0) daily.push({ date: DateUtil.dateToIso(new Date()), minutes: 0 });
+      [...dailyMap.keys()].sort().forEach(d => daily.push({ date: d, minutes: dailyMap.get(d), overlap: overlapDates.has(d) }));
+      if (daily.length === 0) daily.push({ date: DateUtil.dateToIso(new Date()), minutes: 0, overlap: false });
     } else {
       const d = new Date(start);
       while (d <= end) {
         const iso = DateUtil.dateToIso(d);
-        daily.push({ date: iso, minutes: dailyMap.get(iso) || 0 });
+        daily.push({ date: iso, minutes: dailyMap.get(iso) || 0, overlap: overlapDates.has(iso) });
         d.setDate(d.getDate() + 1);
       }
     }

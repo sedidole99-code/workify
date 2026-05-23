@@ -92,6 +92,7 @@ export class App {
       to: document.getElementById('rangeTo'),
       totalEl: document.getElementById('reportTotal'),
       chartSvg: document.getElementById('reportChart'),
+      chartTip: document.getElementById('reportChartTip'),
       donutSvg: document.getElementById('reportDonut'),
       tbody: document.getElementById('reportProjectBody'),
     });

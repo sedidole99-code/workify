@@ -83,6 +83,65 @@ test('EntryGrouping.findOverlapIds', async (t) => {
   });
 });
 
+test('EntryGrouping.findOverlapDates', async (t) => {
+  await t.test('returns empty Set when no day has overlap', () => {
+    const items = [
+      makeEntry({ id: 'a', date: '2026-05-22', startTime: '09:00', endTime: '10:00', duration: 60 }),
+      makeEntry({ id: 'b', date: '2026-05-22', startTime: '10:00', endTime: '11:00', duration: 60 }),
+      makeEntry({ id: 'c', date: '2026-05-23', startTime: '09:00', endTime: '10:00', duration: 60 }),
+    ];
+    assert.equal(EntryGrouping.findOverlapDates(items).size, 0);
+  });
+
+  await t.test('flags a date when two of its entries overlap', () => {
+    const items = [
+      makeEntry({ id: 'a', date: '2026-05-22', startTime: '10:20', endTime: '13:45', duration: 205 }),
+      makeEntry({ id: 'b', date: '2026-05-22', startTime: '13:44', endTime: '15:15', duration: 91 }),
+      makeEntry({ id: 'c', date: '2026-05-23', startTime: '09:00', endTime: '10:00', duration: 60 }),
+    ];
+    const dates = EntryGrouping.findOverlapDates(items);
+    assert.equal(dates.size, 1);
+    assert.ok(dates.has('2026-05-22'));
+    assert.ok(!dates.has('2026-05-23'));
+  });
+
+  await t.test('overlap is scoped to a single date — entries on different dates do not cross-trigger', () => {
+    const items = [
+      makeEntry({ id: 'a', date: '2026-05-22', startTime: '09:00', endTime: '11:00', duration: 120 }),
+      makeEntry({ id: 'b', date: '2026-05-23', startTime: '10:00', endTime: '12:00', duration: 120 }),
+    ];
+    assert.equal(EntryGrouping.findOverlapDates(items).size, 0);
+  });
+
+  await t.test('flags multiple dates independently', () => {
+    const items = [
+      makeEntry({ id: 'a', date: '2026-05-22', startTime: '09:00', endTime: '10:00', duration: 60 }),
+      makeEntry({ id: 'b', date: '2026-05-22', startTime: '09:30', endTime: '10:30', duration: 60 }),
+      makeEntry({ id: 'c', date: '2026-05-24', startTime: '14:00', endTime: '15:00', duration: 60 }),
+      makeEntry({ id: 'd', date: '2026-05-24', startTime: '14:30', endTime: '15:30', duration: 60 }),
+    ];
+    const dates = EntryGrouping.findOverlapDates(items);
+    assert.equal(dates.size, 2);
+    assert.ok(dates.has('2026-05-22') && dates.has('2026-05-24'));
+  });
+
+  await t.test('ignores entries missing a date', () => {
+    const items = [
+      makeEntry({ id: 'a', date: '', startTime: '09:00', endTime: '11:00', duration: 120 }),
+      makeEntry({ id: 'b', date: '', startTime: '10:00', endTime: '12:00', duration: 120 }),
+    ];
+    assert.equal(EntryGrouping.findOverlapDates(items).size, 0);
+  });
+
+  await t.test('empty input returns empty Set', () => {
+    assert.equal(EntryGrouping.findOverlapDates([]).size, 0);
+  });
+
+  await t.test('single entry on a date never flags that date', () => {
+    assert.equal(EntryGrouping.findOverlapDates([makeEntry()]).size, 0);
+  });
+});
+
 test('EntryGrouping.findGapIds', async (t) => {
   await t.test('no gaps when entries are contiguous', () => {
     const items = [

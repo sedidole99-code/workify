@@ -298,6 +298,7 @@
     font-variant-numeric: tabular-nums;
   }
   .report-chart-card {
+    position: relative;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -305,6 +306,20 @@
     margin-bottom: 1.25rem;
   }
   .report-chart-card svg { display: block; width: 100%; height: auto; }
+  .chart-tip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 10;
+    transform: translate(0.75rem, -50%);
+  }
+  .chart-tip[hidden] { display: none; }
   .report-split { display: grid; grid-template-columns: 1fr 17.5rem; gap: 1.25rem; }
   @media (max-width: 56.25em) { .report-split { grid-template-columns: 1fr; } }
   .report-table {

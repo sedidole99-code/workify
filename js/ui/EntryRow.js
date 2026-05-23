@@ -45,7 +45,10 @@ export class EntryRow {
         <button type="button" class="delete-btn" title="Delete">×</button>
       </div>
     `;
-    row.querySelector('[data-field="description"]').value = e.description;
+    const descInput = row.querySelector('[data-field="description"]');
+    descInput.value = e.description;
+    descInput.title = e.description;
+    descInput.addEventListener('input', () => { descInput.title = descInput.value; });
     const sel = row.querySelector('[data-field="project"]');
     const projSelect = new ProjectSelect(sel, this.store);
     projSelect.fill(e.project);
